@@ -19,7 +19,9 @@
       position: relative;
       width: 850px;   /* set to your PNG width */
       height: 1100px; /* set to your PNG height */
-      margin: 1rem auto;
+
+      /* IMPORTANT: this path must match your repo:
+         /assets/daggerheart-core.png (case-sensitive) */
       background-image: url("assets/daggerheart-core.png");
       background-size: cover;
       background-repeat: no-repeat;
@@ -71,8 +73,7 @@
     </div>
   </main>
 
-  <!-- Firebase SDKs (compat version, easier for now)
-       Replace 10.12.0 with the current version shown in your Firebase Web SDK snippet. -->
+  <!-- Firebase SDKs (compat version) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
