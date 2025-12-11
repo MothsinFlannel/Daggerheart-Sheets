@@ -47,6 +47,13 @@
       font-size: 0.8rem;
       color: #aaa;
     }
+
+    .field.debug input[type="text"],
+    .field.debug input[type="checkbox"] {
+      outline: 1px solid rgba(0, 255, 0, 0.7);
+      background: rgba(0, 0, 0, 0.4);
+    }
+
   </style>
 </head>
 <body>
@@ -72,6 +79,23 @@
       </div>
     </div>
   </main>
+
+  <script>
+    // Simple helper: click on the sheet to get coordinates for new fields.
+    (function () {
+      const wrapper = document.querySelector(".sheet-wrapper");
+      if (!wrapper) return;
+
+      wrapper.addEventListener("click", (e) => {
+        const rect = wrapper.getBoundingClientRect();
+        const top = Math.round(e.clientY - rect.top);
+        const left = Math.round(e.clientX - rect.left);
+        console.log(
+          `[coord] top: ${top}px; left: ${left}px;  --> style="top: ${top}px; left: ${left}px;"`
+        );
+      });
+    })();
+  </script>
 
   <!-- Firebase SDKs (compat version) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
