@@ -57,17 +57,23 @@
     .track-container {
       position: absolute;
       display: flex;
+      flex-wrap: wrap;       /* lets us use rows (armor grid) or single rows */
       gap: 4px;
       align-items: center;
     }
 
     .track-container .field {
-      position: static;   /* we use flex layout within the container */
+      position: static;      /* inside flex/grid container, we don't want absolute */
     }
 
     .track-container .field input[type="checkbox"] {
       width: 14px;
       height: 14px;
+    }
+
+    /* Visually indicate boxes beyond current max */
+    .track-disabled {
+      opacity: 0.35;
     }
 
 
@@ -82,8 +88,43 @@
     <div class="sheet-wrapper">
       <!-- Example positioned fields; adjust top/left values to match your PNG -->
 
+      <!-- HP Max -->
+      <div class="field" data-key="hp_max" style="top: 200px; left: 700px;">
+        <input type="text" placeholder="HP Max">
+      </div>
+
+      <!-- Stress Max -->
+      <div class="field" data-key="stress_max" style="top: 230px; left: 700px;">
+        <input type="text" placeholder="Stress Max">
+      </div>
+
+      <!-- Armor Max (if you want per-character cap less than 12) -->
+      <div class="field" data-key="armor_max" style="top: 260px; left: 700px;">
+        <input type="text" placeholder="Armor Max">
+      </div>
+
+      <!-- Gold (Handfuls) Max (optional) -->
+      <div class="field" data-key="gold_hand_max" style="top: 290px; left: 700px;">
+        <input type="text" placeholder="Handfuls Max">
+      </div>
+
+      <!-- Gold (Bags) Max (optional) -->
+      <div class="field" data-key="gold_bag_max" style="top: 320px; left: 700px;">
+        <input type="text" placeholder="Bags Max">
+      </div>
+
+      <!-- Proficiency Max (often fixed at 6, but configurable anyway) -->
+      <div class="field" data-key="proficiency_max" style="top: 350px; left: 700px;">
+        <input type="text" placeholder="Prof Max">
+      </div>
+
+
       <div class="field" data-key="name" style="top: 60px; left: 120px;">
         <input type="text" placeholder="Name">
+      </div>
+
+      <div class="field" data-key="class" style="top: 92px; left: 380px;">
+        <input type="text" placeholder="Class">
       </div>
 
       <div class="field" data-key="ancestry" style="top: 60px; left: 400px;">
@@ -98,7 +139,7 @@
   </main>
 
   <script>
-    // Simple helper: click on the sheet to get coordinates for new fields.
+    // === Coordinate helper: click to log top/left relative to sheet ===
     (function () {
       const wrapper = document.querySelector(".sheet-wrapper");
       if (!wrapper) return;
@@ -115,19 +156,20 @@
   </script>
 
   <script>
-    // Track generator: creates multiple checkbox .field elements in a row
+    // === Track generators: linear row + grid (for armor 4x3) ===
     (function () {
       const wrapper = document.querySelector(".sheet-wrapper");
       if (!wrapper) return;
 
       /**
-       * Create a row of checkboxes that behave like individual fields.
-       * @param {string} baseKey - e.g. "armor", "hp", "stress"
-       * @param {number} count - how many checkboxes to render
-       * @param {number} top - top offset in px
-       * @param {number} left - left offset in px
+       * Linear horizontal track (one row of checkboxes)
+       * @param {string} baseKey e.g. "hp", "stress"
+       * @param {number} count   how many checkboxes total
+       * @param {number} top     top offset (px)
+       * @param {number} left    left offset (px)
+       * @param {number} gapX    px between boxes (default 18)
        */
-      function createTrack(baseKey, count, top, left) {
+      function createLinearTrack(baseKey, count, top, left, gapX = 18) {
         const container = document.createElement("div");
         container.className = "track-container";
         container.style.top = top + "px";
@@ -135,8 +177,46 @@
 
         for (let i = 0; i < count; i++) {
           const fieldWrapper = document.createElement("div");
-          fieldWrapper.className = "field"; // important: picked up by sheet-firebase.js
-          // e.g. armor_0, armor_1, ...
+          fieldWrapper.className = "field";
+          fieldWrapper.dataset.key = `${baseKey}_${i}`;
+
+          const input = document.createElement("input");
+          input.type = "checkbox";
+
+          // fine-tune spacing per track
+          fieldWrapper.style.marginRight = (i === count - 1 ? 0 : gapX) + "px";
+
+          fieldWrapper.appendChild(input);
+          container.appendChild(fieldWrapper);
+        }
+
+        wrapper.appendChild(container);
+      }
+
+      /**
+       * Grid track (for armor 4x3)
+       * @param {string} baseKey e.g. "armor"
+       * @param {number} rows
+       * @param {number} cols
+       * @param {number} top
+       * @param {number} left
+       * @param {number} gapX
+       * @param {number} gapY
+       */
+      function createGridTrack(baseKey, rows, cols, top, left, gapX = 18, gapY = 10) {
+        const container = document.createElement("div");
+        container.className = "track-container";
+        container.style.top = top + "px";
+        container.style.left = left + "px";
+        container.style.display = "grid";
+        container.style.gridTemplateColumns = `repeat(${cols}, auto)`;
+        container.style.columnGap = gapX + "px";
+        container.style.rowGap = gapY + "px";
+
+        const count = rows * cols;
+        for (let i = 0; i < count; i++) {
+          const fieldWrapper = document.createElement("div");
+          fieldWrapper.className = "field";
           fieldWrapper.dataset.key = `${baseKey}_${i}`;
 
           const input = document.createElement("input");
@@ -149,19 +229,29 @@
         wrapper.appendChild(container);
       }
 
-      // ===== Define your tracks here =====
-      // Example values – you’ll change top/left after clicking the sheet to get coordinates.
+      // ====== YOUR TRACKS (adjust coords & spacing) ======
 
-      // 12 armor slots in a row:
-      createTrack("armor", 12, 500, 150);
+      // Armor: 4 rows of 3 (12 total)
+      // Replace top/left with real values using the click logger.
+      createGridTrack("armor", 4, 3, 400, 150, 18, 10);
 
-      // e.g. 20 max HP boxes if you want:
-      createTrack("hp", 20, 550, 150);
+      // HP: horizontal row of 12 (normal spacing)
+      createLinearTrack("hp", 12, 500, 150, 18);
 
-      // e.g. 20 stress slots:
-      createTrack("stress", 20, 600, 150);
+      // Stress: horizontal row of 12 (slightly narrower spacing)
+      createLinearTrack("stress", 12, 530, 150, 14); // reduce gapX to tighten spacing
+
+      // Gold (Handfuls): row of 9
+      createLinearTrack("gold_hand", 9, 560, 150, 18);
+
+      // Gold (Bags): row of 9
+      createLinearTrack("gold_bag", 9, 590, 150, 18);
+
+      // Proficiency: row of 6
+      createLinearTrack("proficiency", 6, 620, 150, 20);
     })();
   </script>
+
 
 
   <!-- Firebase SDKs (compat version) -->
