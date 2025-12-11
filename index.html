@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Daggerheart Sheet</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #111;
+    }
+    #sheet {
+      position: relative;
+      width: 1000px; /* match your PNG width */
+      margin: 0 auto;
+    }
+    #bg {
+      width: 100%;
+      display: block;
+    }
+    .field {
+      position: absolute;
+      background: transparent;
+      color: white;
+      border: none;
+      outline: none;
+      font-size: 18px;
+      width: 200px;
+    }
+    .checkbox {
+      width: 20px;
+      height: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="sheet">
+  <img id="bg" src="sheet.png">
+  
+  <!-- Example text field -->
+  <input class="field" id="name" style="top: 140px; left: 180px; width: 300px">
+
+  <!-- Example checkbox -->
+  <input type="checkbox" class="field checkbox" id="hope1" style="top: 300px; left: 200px">
+</div>
+
+<script>
+  const fields = ["name", "hope1"];
+
+  // Load saved data
+  fields.forEach(id => {
+    let el = document.getElementById(id);
+    let saved = localStorage.getItem(id);
+    if (saved !== null) {
+      if (el.type === "checkbox") el.checked = saved === "true";
+      else el.value = saved;
+    }
+
+    el.addEventListener("input", () => {
+      if (el.type === "checkbox") {
+        localStorage.setItem(id, el.checked);
+      } else {
+        localStorage.setItem(id, el.value);
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
