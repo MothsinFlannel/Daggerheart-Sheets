@@ -1,70 +1,93 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Daggerheart Sheet</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: #111;
-    }
-    #sheet {
-      position: relative;
-      width: 1000px; /* match your PNG width */
-      margin: 0 auto;
-    }
-    #bg {
-      width: 100%;
-      display: block;
-    }
-    .field {
-      position: absolute;
-      background: transparent;
-      color: white;
-      border: none;
-      outline: none;
-      font-size: 18px;
-      width: 200px;
-    }
-    .checkbox {
-      width: 20px;
-      height: 20px;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <title>Daggerheart Character Sheets</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <main class="container">
+    <h1>Daggerheart Character Sheets</h1>
 
-<div id="sheet">
-  <img id="bg" src="sheet.png">
-  
-  <!-- Example text field -->
-  <input class="field" id="name" style="top: 140px; left: 180px; width: 300px">
+    <section class="card">
+      <h2>Open or Create a Sheet</h2>
+      <p class="small">
+        Enter a <strong>Character ID</strong> and choose a page.
+        Anyone who opens the same character + page sees the same data, live.
+      </p>
 
-  <!-- Example checkbox -->
-  <input type="checkbox" class="field checkbox" id="hope1" style="top: 300px; left: 200px">
-</div>
+      <label for="char-id">Character ID</label>
+      <input
+        id="char-id"
+        type="text"
+        placeholder="e.g. kael, sister-mira, gm-npc-01"
+      >
 
-<script>
-  const fields = ["name", "hope1"];
+      <label for="page-id">Page</label>
+      <select id="page-id">
+        <option value="core">Core Sheet</option>
+        <option value="advancement">Advancement / XP</option>
+        <option value="notes">Notes</option>
+      </select>
 
-  // Load saved data
-  fields.forEach(id => {
-    let el = document.getElementById(id);
-    let saved = localStorage.getItem(id);
-    if (saved !== null) {
-      if (el.type === "checkbox") el.checked = saved === "true";
-      else el.value = saved;
+      <div class="actions">
+        <button id="open-sheet">Open Sheet</button>
+        <button class="secondary" id="quick-test">Open Test Sheet</button>
+      </div>
+
+      <p class="small">
+        Sheets are stored in Firebase under
+        <code>characters/{charId}/pages/{pageId}</code>.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>How This Works</h2>
+      <ul class="small">
+        <li>Background is a static PNG of the Daggerheart sheet.</li>
+        <li>Inputs and checkboxes are absolutely positioned over the art.</li>
+        <li>All edits sync in real time via Firestore.</li>
+      </ul>
+    </section>
+  </main>
+
+  <script>
+    const charInput = document.getElementById('char-id');
+    const pageSelect = document.getElementById('page-id');
+    const openBtn = document.getElementById('open-sheet');
+    const quickTestBtn = document.getElementById('quick-test');
+
+    function openSheet(charId, pageId) {
+      charId = (charId || '').trim();
+      if (!charId) {
+        alert('Enter a Character ID first.');
+        return;
+      }
+      const url = `sheet.html?char=${encodeURIComponent(charId)}&page=${encodeURIComponent(pageId)}`;
+      window.location.href = url;
     }
 
-    el.addEventListener("input", () => {
-      if (el.type === "checkbox") {
-        localStorage.setItem(id, el.checked);
-      } else {
-        localStorage.setItem(id, el.value);
+    openBtn.addEventListener('click', () => {
+      openSheet(charInput.value, pageSelect.value);
+    });
+
+    quickTestBtn.addEventListener('click', () => {
+      // Low-friction test: prefill something and go
+      if (!charInput.value.trim()) {
+        charInput.value = 'test-char';
+      }
+      if (!pageSelect.value) {
+        pageSelect.value = 'core';
+      }
+      openSheet(charInput.value, pageSelect.value);
+    });
+
+    // Hit Enter to open
+    charInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        openSheet(charInput.value, pageSelect.value);
       }
     });
-  });
-</script>
-
+  </script>
 </body>
 </html>
