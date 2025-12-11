@@ -54,6 +54,23 @@
       background: rgba(0, 0, 0, 0.4);
     }
 
+    .track-container {
+      position: absolute;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .track-container .field {
+      position: static;   /* we use flex layout within the container */
+    }
+
+    .track-container .field input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+    }
+
+
   </style>
 </head>
 <body>
@@ -96,6 +113,56 @@
       });
     })();
   </script>
+
+  <script>
+    // Track generator: creates multiple checkbox .field elements in a row
+    (function () {
+      const wrapper = document.querySelector(".sheet-wrapper");
+      if (!wrapper) return;
+
+      /**
+       * Create a row of checkboxes that behave like individual fields.
+       * @param {string} baseKey - e.g. "armor", "hp", "stress"
+       * @param {number} count - how many checkboxes to render
+       * @param {number} top - top offset in px
+       * @param {number} left - left offset in px
+       */
+      function createTrack(baseKey, count, top, left) {
+        const container = document.createElement("div");
+        container.className = "track-container";
+        container.style.top = top + "px";
+        container.style.left = left + "px";
+
+        for (let i = 0; i < count; i++) {
+          const fieldWrapper = document.createElement("div");
+          fieldWrapper.className = "field"; // important: picked up by sheet-firebase.js
+          // e.g. armor_0, armor_1, ...
+          fieldWrapper.dataset.key = `${baseKey}_${i}`;
+
+          const input = document.createElement("input");
+          input.type = "checkbox";
+
+          fieldWrapper.appendChild(input);
+          container.appendChild(fieldWrapper);
+        }
+
+        wrapper.appendChild(container);
+      }
+
+      // ===== Define your tracks here =====
+      // Example values – you’ll change top/left after clicking the sheet to get coordinates.
+
+      // 12 armor slots in a row:
+      createTrack("armor", 12, 500, 150);
+
+      // e.g. 20 max HP boxes if you want:
+      createTrack("hp", 20, 550, 150);
+
+      // e.g. 20 stress slots:
+      createTrack("stress", 20, 600, 150);
+    })();
+  </script>
+
 
   <!-- Firebase SDKs (compat version) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
