@@ -1,204 +1,192 @@
 // sheet-firebase.js
 
-console.log("[sheet-firebase] Script loaded.");
+// 1. Init Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-// --- 1. Sanity checks for Firebase globals and config ---
-
-if (typeof firebase === "undefined") {
-  console.error("[sheet-firebase] Firebase global is NOT defined. Check your <script> tags for firebase-app-compat.js and firebase-firestore-compat.js.");
-}
-
-if (typeof firebaseConfig === "undefined") {
-  console.error("[sheet-firebase] firebaseConfig is NOT defined. Make sure firebase-config.js is loaded BEFORE sheet-firebase.js.");
-}
-
-// --- 2. Initialize Firebase app ---
-
-let app;
-try {
-  app = firebase.initializeApp(firebaseConfig);
-  console.log("[sheet-firebase] Firebase initialized. apps.length =", firebase.apps.length, "projectId =", firebaseConfig.projectId);
-} catch (err) {
-  console.error("[sheet-firebase] Firebase initialization FAILED:", err);
-}
-
-// --- 3. Initialize Firestore ---
-
-let db;
-try {
-  db = firebase.firestore();
-  console.log("[sheet-firebase] Firestore instance created:", typeof db.collection === "function" ? "OK" : "Unexpected");
-} catch (err) {
-  console.error("[sheet-firebase] Firestore initialization FAILED:", err);
-}
-
-// If Firestore failed, abort further logic
-if (!db) {
-  console.error("[sheet-firebase] No Firestore instance; aborting sheet logic.");
-} else {
-  // --- 3a. Debug write to confirm rules / connectivity ---
-  db.collection("debug_connection").doc("sheet_boot")
-    .set({ ok: true, ts: Date.now() })
-    .then(() => console.log("[sheet-firebase] Debug write succeeded (debug_connection/sheet_boot)."))
-    .catch(err => console.error("[sheet-firebase] Debug write FAILED:", err));
-}
-
-// --- 4. Parse URL params ---
-
+// 2. Parse URL params
 const params = new URLSearchParams(window.location.search);
-const charId = params.get("char") || "unnamed";
-const pageId = params.get("page") || "core";
+const charId = params.get('char') || 'unnamed';
+const pageId = params.get('page') || 'core';
 
-const metaEl = document.getElementById("meta");
-const connEl = document.getElementById("connection-status");
+const metaEl = document.getElementById('meta');
+const connEl = document.getElementById('connection-status');
 
 if (metaEl) {
   metaEl.textContent = `Character: ${charId} · Page: ${pageId}`;
-} else {
-  console.warn("[sheet-firebase] #meta element not found in DOM.");
 }
 
-// Only proceed with Firestore logic if db exists
-if (db) {
-  // --- 5. Firestore document reference ---
+// 3. Firestore document reference
+const docRef = db
+  .collection('characters')
+  .doc(charId)
+  .collection('pages')
+  .doc(pageId);
 
-  const docRef = db
-    .collection("characters")
-    .doc(charId)
-    .collection("pages")
-    .doc(pageId);
+// 4. Grab all fields on the page
+let fieldWrappers = Array.from(document.querySelectorAll('.field'));
 
-  console.log(
-    "[sheet-firebase] Using document path:",
-    `characters/${charId}/pages/${pageId}`
-  );
+// Track definitions: absolute max per printed sheet
+// (we ALWAYS render this many, but only the first N are active, where N = *_max)
+const TRACK_DEFINITIONS = {
+  armor: 12,
+  hp: 12,
+  stress: 12,
+  gold_hand: 9,
+  gold_bag: 9,
+  proficiency: 6
+};
 
-  // --- 6. Field DOM management ---
+function getCurrentFieldsFromDom() {
+  const data = {};
+  fieldWrappers.forEach(wrapper => {
+    const key = wrapper.dataset.key;
+    const input = wrapper.querySelector('input');
+    if (!key || !input) return;
 
-  const fieldWrappers = Array.from(document.querySelectorAll(".field"));
-  console.log("[sheet-firebase] Found .field elements:", fieldWrappers.length);
+    if (input.type === 'checkbox') {
+      data[key] = !!input.checked;
+    } else {
+      data[key] = input.value;
+    }
+  });
+  return data;
+}
 
-  function getCurrentFieldsFromDom() {
-    const data = {};
-    fieldWrappers.forEach(wrapper => {
-      const key = wrapper.dataset.key;
-      const input = wrapper.querySelector("input");
-      if (!key || !input) return;
+function applyFieldsToDom(fields) {
+  if (!fields) return;
+  fieldWrappers.forEach(wrapper => {
+    const key = wrapper.dataset.key;
+    const input = wrapper.querySelector('input');
+    if (!key || !input) return;
 
-      if (input.type === "checkbox") {
-        data[key] = !!input.checked;
+    const value = fields[key];
+
+    if (input.type === 'checkbox') {
+      input.checked = !!value;
+    } else {
+      input.value = value ?? '';
+    }
+  });
+}
+
+/**
+ * Apply track max constraints based on *_max fields.
+ * Example: hp_max = 4 => hp_0..hp_3 enabled, hp_4..hp_11 disabled + cleared.
+ */
+function applyTrackMaxes(fields) {
+  if (!fields) return;
+
+  Object.entries(TRACK_DEFINITIONS).forEach(([baseKey, absoluteMax]) => {
+    const maxKey = `${baseKey}_max`;
+    let currentMax = parseInt(fields[maxKey], 10);
+
+    if (isNaN(currentMax) || currentMax < 0) {
+      // No max set yet? Use full track.
+      currentMax = absoluteMax;
+    } else if (currentMax > absoluteMax) {
+      currentMax = absoluteMax;
+    }
+
+    for (let i = 0; i < absoluteMax; i++) {
+      const wrapper = document.querySelector(`.field[data-key="${baseKey}_${i}"]`);
+      if (!wrapper) continue;
+      const input = wrapper.querySelector('input');
+      if (!input) continue;
+
+      if (i < currentMax) {
+        input.disabled = false;
+        wrapper.classList.remove('track-disabled');
       } else {
-        data[key] = input.value;
+        // Beyond max: clear & disable
+        input.checked = false;
+        input.disabled = true;
+        wrapper.classList.add('track-disabled');
       }
-    });
-    return data;
+    }
+  });
+}
+
+// 5. Debounce helper to avoid writing on every keystroke instantly
+function debounce(fn, delay) {
+  let timer = null;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
+
+// 6. Push local changes to Firestore
+const pushUpdates = debounce(async () => {
+  const fields = getCurrentFieldsFromDom();
+
+  try {
+    await docRef.set(
+      {
+        fields,
+        updatedAt: Date.now()
+      },
+      { merge: true }
+    );
+    if (connEl) connEl.textContent = 'Synced ✔';
+  } catch (err) {
+    console.error(err);
+    if (connEl) connEl.textContent = 'Sync failed ❌ (check console)';
   }
+}, 500); // half-second debounce
 
-  function applyFieldsToDom(fields) {
-    if (!fields) return;
-    fieldWrappers.forEach(wrapper => {
-      const key = wrapper.dataset.key;
-      const input = wrapper.querySelector("input");
-      if (!key || !input) return;
+// 7. Attach event listeners so editing triggers pushUpdates
+fieldWrappers.forEach(wrapper => {
+  const input = wrapper.querySelector('input');
+  if (!input) return;
 
-      const value = fields[key];
+  const evt = input.type === 'checkbox' ? 'change' : 'input';
+  input.addEventListener(evt, () => {
+    if (connEl) connEl.textContent = 'Syncing…';
+    pushUpdates();
+  });
+});
 
-      if (input.type === "checkbox") {
-        input.checked = !!value;
-      } else {
-        input.value = value ?? "";
-      }
-    });
-  }
+// 8. Subscribe to Firestore changes (real-time)
+let isInitialLoad = true;
 
-  // --- 7. Debounce helper ---
+// IMPORTANT: some fields (.field elements) are added dynamically by the track generator
+// which runs before this script in sheet.html. If you ever change that order, re-grab them.
+fieldWrappers = Array.from(document.querySelectorAll('.field'));
 
-  function debounce(fn, delay) {
-    let timer = null;
-    return (...args) => {
-      clearTimeout(timer);
-      timer = setTimeout(() => fn(...args), delay);
-    };
-  }
-
-  // --- 8. Push local changes to Firestore ---
-
-  const pushUpdates = debounce(async () => {
-    const fields = getCurrentFieldsFromDom();
-    console.log("[sheet-firebase] pushUpdates triggered. Fields:", fields);
-
-    try {
-      await docRef.set(
+docRef.onSnapshot(
+  snapshot => {
+    if (!snapshot.exists) {
+      // First time: create empty doc with current DOM values
+      const fields = getCurrentFieldsFromDom();
+      docRef.set(
         {
           fields,
           updatedAt: Date.now()
         },
         { merge: true }
-      );
-      console.log("[sheet-firebase] Firestore set() success.");
-      if (connEl) connEl.textContent = "Synced ✔";
-    } catch (err) {
-      console.error("[sheet-firebase] Firestore set() FAILED:", err);
-      if (connEl) connEl.textContent = "Sync failed ❌ (check console)";
+      ).catch(console.error);
+      if (connEl) connEl.textContent = 'Connected (new sheet) 🔄';
+      return;
     }
-  }, 500);
 
-  // --- 9. Attach event listeners to inputs ---
+    const data = snapshot.data() || {};
+    const fields = data.fields || {};
 
-  fieldWrappers.forEach(wrapper => {
-    const input = wrapper.querySelector("input");
-    if (!input) return;
+    // First apply all raw values
+    applyFieldsToDom(fields);
+    // Then apply track max logic
+    applyTrackMaxes(fields);
 
-    const evt = input.type === "checkbox" ? "change" : "input";
-    input.addEventListener(evt, () => {
-      if (connEl) connEl.textContent = "Syncing…";
-      pushUpdates();
-    });
-  });
-
-  // --- 10. Real-time snapshot listener ---
-
-  let isInitialLoad = true;
-
-  docRef.onSnapshot(
-    snapshot => {
-      console.log("[sheet-firebase] onSnapshot fired. exists =", snapshot.exists);
-      if (!snapshot.exists) {
-        // First time: create empty doc with current DOM values
-        const fields = getCurrentFieldsFromDom();
-        console.log("[sheet-firebase] Creating new Firestore doc with initial fields:", fields);
-
-        docRef.set(
-          {
-            fields,
-            updatedAt: Date.now()
-          },
-          { merge: true }
-        )
-          .then(() => console.log("[sheet-firebase] Initial doc set() succeeded."))
-          .catch(err => console.error("[sheet-firebase] Initial doc set() FAILED:", err));
-
-        if (connEl) connEl.textContent = "Connected (new sheet) 🔄";
-        return;
-      }
-
-      const data = snapshot.data() || {};
-      const fields = data.fields || {};
-      console.log("[sheet-firebase] Snapshot data:", data);
-
-      applyFieldsToDom(fields);
-
-      if (connEl) {
-        connEl.textContent = isInitialLoad
-          ? "Connected (loaded from cloud) ✔"
-          : "Updated from cloud 🔄";
-      }
-
-      isInitialLoad = false;
-    },
-    err => {
-      console.error("[sheet-firebase] Snapshot error:", err);
-      if (connEl) connEl.textContent = "Connection error ❌ (see console)";
+    if (connEl) {
+      connEl.textContent = isInitialLoad
+        ? 'Connected (loaded from cloud) ✔'
+        : 'Updated from cloud 🔄';
     }
-  );
-}
+    isInitialLoad = false;
+  },
+  err => {
+    console.error('Snapshot error', err);
+    if (connEl) connEl.textContent = 'Connection error ❌ (see console)';
+  }
+);
