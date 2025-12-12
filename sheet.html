@@ -20,8 +20,6 @@
       position: relative;
       width: 850px;   /* match your PNG width */
       height: 1100px; /* match your PNG height */
-
-      /* IMPORTANT: must exist at /assets/daggerheart-core.png (case-sensitive) */
       background-image: url("assets/daggerheart-core.png");
       background-size: cover;
       background-repeat: no-repeat;
@@ -39,7 +37,7 @@
       font-size: 12px;
     }
 
-    /* === Text line + number slot input styling (for the sheet, not the homepage) === */
+    /* === Inputs/areas on the sheet (NOT the homepage) === */
     .sheet-wrapper input[type="text"],
     .sheet-wrapper textarea {
       background: transparent;
@@ -52,7 +50,7 @@
 
     .text-line {
       border-bottom: 1px solid rgba(255,255,255,0.4);
-      width: 150px;
+      width: 150px; /* you’ll override per field as needed */
     }
 
     .number-slot {
@@ -69,38 +67,18 @@
       height: 14px;
     }
 
-    /* === Textareas === */
+    /* === Text Box (used for everything that’s not a single line) === */
     .text-box {
-      width: 240px;
-      height: 80px;
+      width: 260px;
+      height: 90px;
       resize: none;
       border: 1px solid rgba(255,255,255,0.35);
       border-radius: 4px;
       padding: 3px 4px;
-      line-height: 16px;
+      line-height: 18px; /* roomier line spacing */
     }
 
-    /* “Lined” textarea: use line-height + background lines to match sheet */
-    .lined-box {
-      width: 240px;
-      height: 80px;
-      resize: none;
-      border: none;
-      padding: 2px 2px;
-      line-height: 18px; /* main control for vertical spacing */
-      background: transparent;
-
-      /* optional faint lines behind text (tune 18px to match line-height) */
-      background-image: repeating-linear-gradient(
-        to bottom,
-        rgba(255,255,255,0.0) 0px,
-        rgba(255,255,255,0.0) calc(18px - 1px),
-        rgba(255,255,255,0.18) 18px
-      );
-      background-size: 100% 18px;
-    }
-
-    /* === Debug helper (optional) === */
+    /* === Debug helper (optional): add "debug" class on any field === */
     .field.debug input[type="text"],
     .field.debug input[type="checkbox"],
     .field.debug textarea {
@@ -121,13 +99,14 @@
       position: static;
     }
 
-    .track-container .field input[type="checkbox"] {
-      width: 14px;
-      height: 14px;
-    }
-
     .track-disabled {
       opacity: 0.35;
+    }
+
+    /* Optional: park new fields off-canvas until you position them */
+    .parked {
+      top: -9999px !important;
+      left: -9999px !important;
     }
   </style>
 </head>
@@ -138,74 +117,355 @@
     <p class="status" id="connection-status"></p>
 
     <div class="sheet-wrapper">
-      <!-- =========================
-           SAMPLE FIELDS (you’ll add many more)
-           ========================= -->
 
-      <div class="field" data-key="name" style="top: 60px; left: 120px;">
-        <input type="text" class="text-line" placeholder="Name" autocomplete="off" spellcheck="false">
-      </div>
-
-      <div class="field" data-key="pronouns" style="top: 60px; left: 320px;">
-        <input type="text" class="text-line" placeholder="Pronouns" autocomplete="off" spellcheck="false">
-      </div>
-
-      <div class="field" data-key="heritage" style="top: 60px; left: 520px;">
-        <input type="text" class="text-line" placeholder="Heritage" autocomplete="off" spellcheck="false">
-      </div>
-
-      <div class="field" data-key="class_subclass" style="top: 92px; left: 120px;">
-        <input type="text" class="text-line" placeholder="Class & Subclass" autocomplete="off" spellcheck="false">
-      </div>
-
-      <!-- Number slot examples -->
-      <div class="field" data-key="level" style="top: 92px; left: 520px;">
-        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0">
-      </div>
-
-      <div class="field" data-key="evasion" style="top: 92px; left: 600px;">
-        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0">
-      </div>
-
-      <!-- Track max fields (these control enabling/disabling boxes) -->
-      <div class="field" data-key="hp_max" style="top: 200px; left: 700px;">
-        <input type="text" class="number-slot" inputmode="numeric" pattern="[0-9]{0,2}" maxlength="2" placeholder="12" title="HP Max">
-      </div>
-
-      <div class="field" data-key="stress_max" style="top: 230px; left: 700px;">
-        <input type="text" class="number-slot" inputmode="numeric" pattern="[0-9]{0,2}" maxlength="2" placeholder="12" title="Stress Max">
-      </div>
-
-      <div class="field" data-key="armor_max" style="top: 260px; left: 700px;">
+      <!-- =========================================================
+           TRACK MAX FIELDS (move these onto the sheet)
+           ========================================================= -->
+      <div class="field" data-key="armor_max" style="top: 129px; left: 132px;">
         <input type="text" class="number-slot" inputmode="numeric" pattern="[0-9]{0,2}" maxlength="2" placeholder="12" title="Armor Max">
       </div>
 
-      <div class="field" data-key="gold_hand_max" style="top: 290px; left: 700px;">
+      <div class="field parked" data-key="hp_max">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[0-9]{0,2}" maxlength="2" placeholder="12" title="HP Max">
+      </div>
+
+      <div class="field parked" data-key="stress_max">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[0-9]{0,2}" maxlength="2" placeholder="12" title="Stress Max">
+      </div>
+
+      <div class="field parked" data-key="hope_max">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[0-9]{0,2}" maxlength="2" placeholder="10" title="Hope Max">
+      </div>
+
+      <div class="field parked" data-key="gold_hand_max">
         <input type="text" class="number-slot" inputmode="numeric" pattern="[0-9]{0,2}" maxlength="2" placeholder="9" title="Handfuls Max">
       </div>
 
-      <div class="field" data-key="gold_bag_max" style="top: 320px; left: 700px;">
+      <div class="field parked" data-key="gold_bag_max">
         <input type="text" class="number-slot" inputmode="numeric" pattern="[0-9]{0,2}" maxlength="2" placeholder="9" title="Bags Max">
       </div>
 
-      <div class="field" data-key="proficiency_max" style="top: 350px; left: 700px;">
+      <div class="field parked" data-key="proficiency_max">
         <input type="text" class="number-slot" inputmode="numeric" pattern="[0-9]{0,2}" maxlength="2" placeholder="6" title="Proficiency Max">
       </div>
 
-      <!-- Example checkbox -->
-      <div class="field" data-key="condition_wounded" style="top: 350px; left: 150px;">
+
+      <!-- =========================================================
+           TOP INFO (Text Lines + Number Slots)
+           ========================================================= -->
+      <div class="field parked" data-key="name">
+        <input type="text" class="text-line" placeholder="Name" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="pronouns">
+        <input type="text" class="text-line" placeholder="Pronouns" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="heritage">
+        <input type="text" class="text-line" placeholder="Heritage" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="class_subclass">
+        <input type="text" class="text-line" placeholder="Class & Subclass" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="level">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0" title="Level">
+      </div>
+
+      <div class="field parked" data-key="evasion">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0" title="Evasion">
+      </div>
+
+
+      <!-- =========================================================
+           ARMOR (Number Slot + Checkbox Series rendered by JS track)
+           ========================================================= -->
+      <div class="field parked" data-key="armor_value">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0" title="Armor Value">
+      </div>
+
+
+      <!-- =========================================================
+           STATS (each has Value + Proficiency Checkbox)
+           ========================================================= -->
+      <div class="field parked" data-key="agility_value">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0" title="Agility">
+      </div>
+      <div class="field parked" data-key="agility_checkbox">
+        <input type="checkbox" title="Agility proficient">
+      </div>
+
+      <div class="field parked" data-key="strength_value">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0" title="Strength">
+      </div>
+      <div class="field parked" data-key="strength_checkbox">
+        <input type="checkbox" title="Strength proficient">
+      </div>
+
+      <div class="field parked" data-key="finesse_value">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0" title="Finesse">
+      </div>
+      <div class="field parked" data-key="finesse_checkbox">
+        <input type="checkbox" title="Finesse proficient">
+      </div>
+
+      <div class="field parked" data-key="instinct_value">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0" title="Instinct">
+      </div>
+      <div class="field parked" data-key="instinct_checkbox">
+        <input type="checkbox" title="Instinct proficient">
+      </div>
+
+      <div class="field parked" data-key="presence_value">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0" title="Presence">
+      </div>
+      <div class="field parked" data-key="presence_checkbox">
+        <input type="checkbox" title="Presence proficient">
+      </div>
+
+      <div class="field parked" data-key="knowledge_value">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0" title="Knowledge">
+      </div>
+      <div class="field parked" data-key="knowledge_checkbox">
+        <input type="checkbox" title="Knowledge proficient">
+      </div>
+
+
+      <!-- =========================================================
+           THRESHOLDS
+           ========================================================= -->
+      <div class="field parked" data-key="threshold_minor">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0" title="Minor Threshold">
+      </div>
+
+      <div class="field parked" data-key="threshold_major">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0" title="Major Threshold">
+      </div>
+
+      <div class="field parked" data-key="threshold_severe">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0" title="Severe Threshold">
+      </div>
+
+
+      <!-- =========================================================
+           HOPE FEATURE (Text Box)
+           ========================================================= -->
+      <div class="field parked" data-key="hope_feature">
+        <textarea class="text-box" placeholder=""></textarea>
+      </div>
+
+
+      <!-- =========================================================
+           EXPERIENCE 1..5 (Text Line + Bonus Number Slot)
+           ========================================================= -->
+      <div class="field parked" data-key="experience_1_text">
+        <input type="text" class="text-line" placeholder="Experience 1" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="field parked" data-key="experience_1_bonus">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0" title="Exp 1 Bonus">
+      </div>
+
+      <div class="field parked" data-key="experience_2_text">
+        <input type="text" class="text-line" placeholder="Experience 2" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="field parked" data-key="experience_2_bonus">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0" title="Exp 2 Bonus">
+      </div>
+
+      <div class="field parked" data-key="experience_3_text">
+        <input type="text" class="text-line" placeholder="Experience 3" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="field parked" data-key="experience_3_bonus">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0" title="Exp 3 Bonus">
+      </div>
+
+      <div class="field parked" data-key="experience_4_text">
+        <input type="text" class="text-line" placeholder="Experience 4" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="field parked" data-key="experience_4_bonus">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0" title="Exp 4 Bonus">
+      </div>
+
+      <div class="field parked" data-key="experience_5_text">
+        <input type="text" class="text-line" placeholder="Experience 5" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="field parked" data-key="experience_5_bonus">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0" title="Exp 5 Bonus">
+      </div>
+
+
+      <!-- =========================================================
+           GOLD (Chest is a single checkbox; Handfuls/Bags are tracks via JS)
+           ========================================================= -->
+      <div class="field parked" data-key="gold_chest">
+        <input type="checkbox" title="Gold Chest">
+      </div>
+
+
+      <!-- =========================================================
+           CLASS FEATURE (Text Box)
+           ========================================================= -->
+      <div class="field" data-key="class_feature" style="top: 785px; left: 6px;">
+        <textarea class="text-box" placeholder=""></textarea>
+      </div>
+
+
+      <!-- =========================================================
+           WEAPON (Primary)
+           ========================================================= -->
+      <div class="field parked" data-key="weapon_name">
+        <input type="text" class="text-line" placeholder="Weapon Name" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="weapon_trait">
+        <input type="text" class="text-line" placeholder="Weapon Trait" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="weapon_range">
+        <input type="text" class="text-line" placeholder="Weapon Range" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="weapon_damage_dice_type">
+        <input type="text" class="text-line" placeholder="Damage Dice & Type" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="weapon_feature">
+        <textarea class="text-box" placeholder=""></textarea>
+      </div>
+
+
+      <!-- =========================================================
+           SECONDARY WEAPON
+           ========================================================= -->
+      <div class="field parked" data-key="secondary_weapon_name">
+        <input type="text" class="text-line" placeholder="Secondary Weapon Name" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="secondary_weapon_trait">
+        <input type="text" class="text-line" placeholder="Secondary Weapon Trait" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="secondary_weapon_range">
+        <input type="text" class="text-line" placeholder="Secondary Weapon Range" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="secondary_weapon_damage_dice_type">
+        <input type="text" class="text-line" placeholder="Damage Dice & Type" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="secondary_weapon_feature">
+        <textarea class="text-box" placeholder=""></textarea>
+      </div>
+
+
+      <!-- =========================================================
+           ARMOR DETAILS
+           ========================================================= -->
+      <div class="field parked" data-key="armor_name">
+        <input type="text" class="text-line" placeholder="Armor Name" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="armor_base_thresholds">
+        <input type="text" class="text-line" placeholder="Base Thresholds" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="armor_base_score">
+        <input type="text" class="text-line" placeholder="Base Score" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="armor_feature">
+        <textarea class="text-box" placeholder=""></textarea>
+      </div>
+
+
+      <!-- =========================================================
+           INVENTORY (Text Box)
+           ========================================================= -->
+      <div class="field" data-key="inventory" style="top: 682px; left: 406px;">
+        <textarea class="text-box" placeholder=""></textarea>
+      </div>
+
+
+      <!-- =========================================================
+           INVENTORY SLOT 1 WEAPON (Primary fields)
+           ========================================================= -->
+      <div class="field parked" data-key="inventory_slot1_weapon_name">
+        <input type="text" class="text-line" placeholder="Inv Slot 1 Weapon Name" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="inventory_slot1_weapon_trait">
+        <input type="text" class="text-line" placeholder="Inv Slot 1 Trait" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="inventory_slot1_weapon_range">
+        <input type="text" class="text-line" placeholder="Inv Slot 1 Range" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="inventory_slot1_weapon_damage_dice_type">
+        <input type="text" class="text-line" placeholder="Inv Slot 1 Damage" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="inventory_slot1_weapon_feature">
+        <textarea class="text-box" placeholder=""></textarea>
+      </div>
+
+      <div class="field parked" data-key="inventory_slot1_weapon_primary_toggle">
+        <input type="checkbox" title="Slot 1 Primary Toggle">
+      </div>
+
+      <div class="field parked" data-key="inventory_slot1_weapon_secondary_toggle">
+        <input type="checkbox" title="Slot 1 Secondary Toggle">
+      </div>
+
+
+      <!-- =========================================================
+           INVENTORY SLOT 2 WEAPON (with Left/Right hand + toggles)
+           ========================================================= -->
+      <div class="field parked" data-key="inventory_slot2_weapon_name">
+        <input type="text" class="text-line" placeholder="Inv Slot 2 Weapon Name" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="inventory_slot2_weapon_trait">
+        <input type="text" class="text-line" placeholder="Inv Slot 2 Trait" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="inventory_slot2_weapon_range">
+        <input type="text" class="text-line" placeholder="Inv Slot 2 Range" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="inventory_slot2_weapon_damage_dice_type">
+        <input type="text" class="text-line" placeholder="Inv Slot 2 Damage" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field parked" data-key="inventory_slot2_weapon_feature">
+        <textarea class="text-box" placeholder=""></textarea>
+      </div>
+
+      <div class="field parked" data-key="inventory_slot2_weapon_left_hand">
+        <input type="checkbox" title="Slot 2 Left Hand">
+      </div>
+
+      <div class="field parked" data-key="inventory_slot2_weapon_right_hand">
+        <input type="checkbox" title="Slot 2 Right Hand">
+      </div>
+
+      <div class="field parked" data-key="inventory_slot2_weapon_primary_toggle">
+        <input type="checkbox" title="Slot 2 Primary Toggle">
+      </div>
+
+      <div class="field parked" data-key="inventory_slot2_weapon_secondary_toggle">
+        <input type="checkbox" title="Slot 2 Secondary Toggle">
+      </div>
+
+
+      <!-- =========================================================
+           MISC / CONDITIONS (example from your early test)
+           ========================================================= -->
+      <div class="field parked" data-key="condition_wounded">
         <input type="checkbox" title="Wounded">
       </div>
 
-      <!-- Example “lined” textarea (Text Multi Line replacement) -->
-      <div class="field" data-key="hope_feature" style="top: 700px; left: 150px;">
-        <textarea class="lined-box" style="width: 260px; height: 92px; line-height: 18px; padding-top: 2px;"></textarea>
-      </div>
-
-      <!-- Example “text box” textarea -->
-      <div class="field" data-key="class_feature" style="top: 820px; left: 150px;">
-        <textarea class="text-box" style="width: 260px; height: 110px;"></textarea>
-      </div>
     </div>
   </main>
 
@@ -281,30 +541,31 @@
         wrapper.appendChild(container);
       }
 
-      // ===== Tracks (coords are placeholders - you’ll align later) =====
+      // ===== Tracks: set coords after you click-log positions =====
+      // NOTE: these should NOT be "parked" — move them by editing these coords.
 
-      // Armor: 4 rows of 3
+      // Armor: 12 (4 rows of 3)
       createGridTrack("armor", 4, 3, 400, 150, 18, 10);
 
-      // HP: 12 max
+      // HP: 12
       createLinearTrack("hp", 12, 500, 150, 18);
 
-      // Stress: 12 max, slightly tighter
+      // Stress: 12 (tighter)
       createLinearTrack("stress", 12, 530, 150, 14);
 
-      // Hope: set to your sheet’s printed max (change if needed)
+      // Hope: 10 (adjust if sheet uses different)
       createLinearTrack("hope", 10, 560, 150, 14);
 
-      // Gold: handfuls/bags
+      // Gold: 9 and 9
       createLinearTrack("gold_hand", 9, 590, 150, 18);
       createLinearTrack("gold_bag", 9, 620, 150, 18);
 
-      // Proficiency
+      // Proficiency: 6
       createLinearTrack("proficiency", 6, 650, 150, 20);
     })();
   </script>
 
-  <!-- Firebase SDKs (compat version) -->
+  <!-- Firebase SDKs (compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
