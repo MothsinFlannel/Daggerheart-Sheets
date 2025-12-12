@@ -21,6 +21,8 @@
         id="char-id"
         type="text"
         placeholder="e.g. kael, sister-mira, gm-npc-01"
+        autocomplete="off"
+        spellcheck="false"
       >
 
       <label for="page-id">Page</label>
@@ -72,17 +74,10 @@
     });
 
     quickTestBtn.addEventListener('click', () => {
-      // Low-friction test: prefill something and go
-      if (!charInput.value.trim()) {
-        charInput.value = 'test-char';
-      }
-      if (!pageSelect.value) {
-        pageSelect.value = 'core';
-      }
-      openSheet(charInput.value, pageSelect.value);
+      if (!charInput.value.trim()) charInput.value = 'test-char';
+      openSheet(charInput.value, pageSelect.value || 'core');
     });
 
-    // Hit Enter to open
     charInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         openSheet(charInput.value, pageSelect.value);

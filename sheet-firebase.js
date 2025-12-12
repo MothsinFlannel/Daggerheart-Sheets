@@ -23,56 +23,62 @@ const docRef = db
   .collection('pages')
   .doc(pageId);
 
-// 4. Grab all fields on the page
-let fieldWrappers = Array.from(document.querySelectorAll('.field'));
-
 // Track definitions: absolute max per printed sheet
-// (we ALWAYS render this many, but only the first N are active, where N = *_max)
 const TRACK_DEFINITIONS = {
-  armor: 12,
+  armor: 12,        // 4x3
   hp: 12,
   stress: 12,
+  hope: 10,         // adjust if your sheet uses a different max
   gold_hand: 9,
   gold_bag: 9,
   proficiency: 6
 };
 
+function getAllFieldWrappers() {
+  return Array.from(document.querySelectorAll('.field'));
+}
+
 function getCurrentFieldsFromDom() {
   const data = {};
-  fieldWrappers.forEach(wrapper => {
-    const key = wrapper.dataset.key;
-    const input = wrapper.querySelector('input');
-    if (!key || !input) return;
+  const wrappers = getAllFieldWrappers();
 
-    if (input.type === 'checkbox') {
-      data[key] = !!input.checked;
+  wrappers.forEach(wrapper => {
+    const key = wrapper.dataset.key;
+    const control = wrapper.querySelector('input, textarea');
+    if (!key || !control) return;
+
+    if (control.type === 'checkbox') {
+      data[key] = !!control.checked;
     } else {
-      data[key] = input.value;
+      data[key] = control.value;
     }
   });
+
   return data;
 }
 
 function applyFieldsToDom(fields) {
   if (!fields) return;
-  fieldWrappers.forEach(wrapper => {
+  const wrappers = getAllFieldWrappers();
+
+  wrappers.forEach(wrapper => {
     const key = wrapper.dataset.key;
-    const input = wrapper.querySelector('input');
-    if (!key || !input) return;
+    const control = wrapper.querySelector('input, textarea');
+    if (!key || !control) return;
 
     const value = fields[key];
 
-    if (input.type === 'checkbox') {
-      input.checked = !!value;
+    if (control.type === 'checkbox') {
+      control.checked = !!value;
     } else {
-      input.value = value ?? '';
+      control.value = value ?? '';
     }
   });
 }
 
 /**
  * Apply track max constraints based on *_max fields.
- * Example: hp_max = 4 => hp_0..hp_3 enabled, hp_4..hp_11 disabled + cleared.
+ * e.g. hp_max = 4 => hp_0..hp_3 enabled, hp_4..hp_11 disabled + cleared.
  */
 function applyTrackMaxes(fields) {
   if (!fields) return;
@@ -82,7 +88,6 @@ function applyTrackMaxes(fields) {
     let currentMax = parseInt(fields[maxKey], 10);
 
     if (isNaN(currentMax) || currentMax < 0) {
-      // No max set yet? Use full track.
       currentMax = absoluteMax;
     } else if (currentMax > absoluteMax) {
       currentMax = absoluteMax;
@@ -91,23 +96,28 @@ function applyTrackMaxes(fields) {
     for (let i = 0; i < absoluteMax; i++) {
       const wrapper = document.querySelector(`.field[data-key="${baseKey}_${i}"]`);
       if (!wrapper) continue;
-      const input = wrapper.querySelector('input');
-      if (!input) continue;
+
+      const control = wrapper.querySelector('input, textarea');
+      if (!control) continue;
 
       if (i < currentMax) {
-        input.disabled = false;
+        control.disabled = false;
         wrapper.classList.remove('track-disabled');
       } else {
         // Beyond max: clear & disable
-        input.checked = false;
-        input.disabled = true;
+        if (control.type === 'checkbox') {
+          control.checked = false;
+        } else {
+          control.value = '';
+        }
+        control.disabled = true;
         wrapper.classList.add('track-disabled');
       }
     }
   });
 }
 
-// 5. Debounce helper to avoid writing on every keystroke instantly
+// Debounce helper
 function debounce(fn, delay) {
   let timer = null;
   return (...args) => {
@@ -116,7 +126,7 @@ function debounce(fn, delay) {
   };
 }
 
-// 6. Push local changes to Firestore
+// Push local changes to Firestore
 const pushUpdates = debounce(async () => {
   const fields = getCurrentFieldsFromDom();
 
@@ -133,31 +143,32 @@ const pushUpdates = debounce(async () => {
     console.error(err);
     if (connEl) connEl.textContent = 'Sync failed ❌ (check console)';
   }
-}, 500); // half-second debounce
+}, 500);
 
-// 7. Attach event listeners so editing triggers pushUpdates
-fieldWrappers.forEach(wrapper => {
-  const input = wrapper.querySelector('input');
-  if (!input) return;
+// Attach event listeners so editing triggers pushUpdates
+function attachListeners() {
+  const wrappers = getAllFieldWrappers();
 
-  const evt = input.type === 'checkbox' ? 'change' : 'input';
-  input.addEventListener(evt, () => {
-    if (connEl) connEl.textContent = 'Syncing…';
-    pushUpdates();
+  wrappers.forEach(wrapper => {
+    const control = wrapper.querySelector('input, textarea');
+    if (!control) return;
+
+    const evt = (control.type === 'checkbox') ? 'change' : 'input';
+    control.addEventListener(evt, () => {
+      if (connEl) connEl.textContent = 'Syncing…';
+      pushUpdates();
+    });
   });
-});
+}
 
-// 8. Subscribe to Firestore changes (real-time)
+attachListeners();
+
+// Subscribe to Firestore changes (real-time)
 let isInitialLoad = true;
-
-// IMPORTANT: some fields (.field elements) are added dynamically by the track generator
-// which runs before this script in sheet.html. If you ever change that order, re-grab them.
-fieldWrappers = Array.from(document.querySelectorAll('.field'));
 
 docRef.onSnapshot(
   snapshot => {
     if (!snapshot.exists) {
-      // First time: create empty doc with current DOM values
       const fields = getCurrentFieldsFromDom();
       docRef.set(
         {
@@ -166,6 +177,7 @@ docRef.onSnapshot(
         },
         { merge: true }
       ).catch(console.error);
+
       if (connEl) connEl.textContent = 'Connected (new sheet) 🔄';
       return;
     }
@@ -173,9 +185,7 @@ docRef.onSnapshot(
     const data = snapshot.data() || {};
     const fields = data.fields || {};
 
-    // First apply all raw values
     applyFieldsToDom(fields);
-    // Then apply track max logic
     applyTrackMaxes(fields);
 
     if (connEl) {

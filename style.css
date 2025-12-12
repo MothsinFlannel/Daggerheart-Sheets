@@ -133,12 +133,9 @@ button:active {
   color: #c5c6c7;
 }
 
-/* ==== Sheet-specific helpers (shared with sheet.html) ==== */
+/* ==== Shared “status” helper ==== */
 
 .status {
   font-size: 0.8rem;
   color: #c5c6c7;
 }
-
-/* If you want, you can move the .sheet-wrapper / .field styles
-   from sheet.html into here later for cleanup */

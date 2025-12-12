@@ -15,55 +15,110 @@
       margin: 1rem auto;
       padding: 0 1rem;
     }
+
     .sheet-wrapper {
       position: relative;
-      width: 850px;   /* set to your PNG width */
-      height: 1100px; /* set to your PNG height */
+      width: 850px;   /* match your PNG width */
+      height: 1100px; /* match your PNG height */
 
-      /* IMPORTANT: this path must match your repo:
-         /assets/daggerheart-core.png (case-sensitive) */
+      /* IMPORTANT: must exist at /assets/daggerheart-core.png (case-sensitive) */
       background-image: url("assets/daggerheart-core.png");
       background-size: cover;
       background-repeat: no-repeat;
       border: 1px solid #333;
     }
-    .field {
-      position: absolute;
-      font-size: 12px;
-    }
-    .field input[type="text"] {
-      background: transparent;
-      border: none;
-      border-bottom: 1px solid rgba(255,255,255,0.4);
-      color: #fff;
-      padding: 0 2px;
-      width: 150px; /* adjust per field */
-    }
-    .field input[type="checkbox"] {
-      width: 14px;
-      height: 14px;
-    }
+
     .status {
       font-size: 0.8rem;
       color: #aaa;
     }
 
-    .field.debug input[type="text"],
-    .field.debug input[type="checkbox"] {
-      outline: 1px solid rgba(0, 255, 0, 0.7);
-      background: rgba(0, 0, 0, 0.4);
+    /* === Base field wrapper === */
+    .field {
+      position: absolute;
+      font-size: 12px;
     }
 
+    /* === Text line + number slot input styling (for the sheet, not the homepage) === */
+    .sheet-wrapper input[type="text"],
+    .sheet-wrapper textarea {
+      background: transparent;
+      border: none;
+      color: #fff;
+      padding: 0 2px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .text-line {
+      border-bottom: 1px solid rgba(255,255,255,0.4);
+      width: 150px;
+    }
+
+    .number-slot {
+      font-size: 16px;
+      font-weight: 700;
+      text-align: center;
+      min-width: 32px;
+      width: 42px;
+      border-bottom: 1px solid rgba(255,255,255,0.4);
+    }
+
+    .sheet-wrapper input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* === Textareas === */
+    .text-box {
+      width: 240px;
+      height: 80px;
+      resize: none;
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 4px;
+      padding: 3px 4px;
+      line-height: 16px;
+    }
+
+    /* “Lined” textarea: use line-height + background lines to match sheet */
+    .lined-box {
+      width: 240px;
+      height: 80px;
+      resize: none;
+      border: none;
+      padding: 2px 2px;
+      line-height: 18px; /* main control for vertical spacing */
+      background: transparent;
+
+      /* optional faint lines behind text (tune 18px to match line-height) */
+      background-image: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.0) 0px,
+        rgba(255,255,255,0.0) calc(18px - 1px),
+        rgba(255,255,255,0.18) 18px
+      );
+      background-size: 100% 18px;
+    }
+
+    /* === Debug helper (optional) === */
+    .field.debug input[type="text"],
+    .field.debug input[type="checkbox"],
+    .field.debug textarea {
+      outline: 1px solid rgba(0, 255, 0, 0.7);
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    /* === Tracks (checkbox series) === */
     .track-container {
       position: absolute;
       display: flex;
-      flex-wrap: wrap;       /* lets us use rows (armor grid) or single rows */
+      flex-wrap: wrap;
       gap: 4px;
       align-items: center;
     }
 
     .track-container .field {
-      position: static;      /* inside flex/grid container, we don't want absolute */
+      position: static;
     }
 
     .track-container .field input[type="checkbox"] {
@@ -71,12 +126,9 @@
       height: 14px;
     }
 
-    /* Visually indicate boxes beyond current max */
     .track-disabled {
       opacity: 0.35;
     }
-
-
   </style>
 </head>
 <body>
@@ -86,60 +138,79 @@
     <p class="status" id="connection-status"></p>
 
     <div class="sheet-wrapper">
-      <!-- Example positioned fields; adjust top/left values to match your PNG -->
-
-      <!-- HP Max -->
-      <div class="field" data-key="hp_max" style="top: 200px; left: 700px;">
-        <input type="text" placeholder="HP Max">
-      </div>
-
-      <!-- Stress Max -->
-      <div class="field" data-key="stress_max" style="top: 230px; left: 700px;">
-        <input type="text" placeholder="Stress Max">
-      </div>
-
-      <!-- Armor Max (if you want per-character cap less than 12) -->
-      <div class="field" data-key="armor_max" style="top: 260px; left: 700px;">
-        <input type="text" placeholder="Armor Max">
-      </div>
-
-      <!-- Gold (Handfuls) Max (optional) -->
-      <div class="field" data-key="gold_hand_max" style="top: 290px; left: 700px;">
-        <input type="text" placeholder="Handfuls Max">
-      </div>
-
-      <!-- Gold (Bags) Max (optional) -->
-      <div class="field" data-key="gold_bag_max" style="top: 320px; left: 700px;">
-        <input type="text" placeholder="Bags Max">
-      </div>
-
-      <!-- Proficiency Max (often fixed at 6, but configurable anyway) -->
-      <div class="field" data-key="proficiency_max" style="top: 350px; left: 700px;">
-        <input type="text" placeholder="Prof Max">
-      </div>
-
+      <!-- =========================
+           SAMPLE FIELDS (you’ll add many more)
+           ========================= -->
 
       <div class="field" data-key="name" style="top: 60px; left: 120px;">
-        <input type="text" placeholder="Name">
+        <input type="text" class="text-line" placeholder="Name" autocomplete="off" spellcheck="false">
       </div>
 
-      <div class="field" data-key="class" style="top: 92px; left: 380px;">
-        <input type="text" placeholder="Class">
+      <div class="field" data-key="pronouns" style="top: 60px; left: 320px;">
+        <input type="text" class="text-line" placeholder="Pronouns" autocomplete="off" spellcheck="false">
       </div>
 
-      <div class="field" data-key="ancestry" style="top: 60px; left: 400px;">
-        <input type="text" placeholder="Ancestry">
+      <div class="field" data-key="heritage" style="top: 60px; left: 520px;">
+        <input type="text" class="text-line" placeholder="Heritage" autocomplete="off" spellcheck="false">
       </div>
 
-      <!-- Checkbox example -->
+      <div class="field" data-key="class_subclass" style="top: 92px; left: 120px;">
+        <input type="text" class="text-line" placeholder="Class & Subclass" autocomplete="off" spellcheck="false">
+      </div>
+
+      <!-- Number slot examples -->
+      <div class="field" data-key="level" style="top: 92px; left: 520px;">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0">
+      </div>
+
+      <div class="field" data-key="evasion" style="top: 92px; left: 600px;">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[+-]?[0-9]{0,3}" maxlength="4" placeholder="0">
+      </div>
+
+      <!-- Track max fields (these control enabling/disabling boxes) -->
+      <div class="field" data-key="hp_max" style="top: 200px; left: 700px;">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[0-9]{0,2}" maxlength="2" placeholder="12" title="HP Max">
+      </div>
+
+      <div class="field" data-key="stress_max" style="top: 230px; left: 700px;">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[0-9]{0,2}" maxlength="2" placeholder="12" title="Stress Max">
+      </div>
+
+      <div class="field" data-key="armor_max" style="top: 260px; left: 700px;">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[0-9]{0,2}" maxlength="2" placeholder="12" title="Armor Max">
+      </div>
+
+      <div class="field" data-key="gold_hand_max" style="top: 290px; left: 700px;">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[0-9]{0,2}" maxlength="2" placeholder="9" title="Handfuls Max">
+      </div>
+
+      <div class="field" data-key="gold_bag_max" style="top: 320px; left: 700px;">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[0-9]{0,2}" maxlength="2" placeholder="9" title="Bags Max">
+      </div>
+
+      <div class="field" data-key="proficiency_max" style="top: 350px; left: 700px;">
+        <input type="text" class="number-slot" inputmode="numeric" pattern="[0-9]{0,2}" maxlength="2" placeholder="6" title="Proficiency Max">
+      </div>
+
+      <!-- Example checkbox -->
       <div class="field" data-key="condition_wounded" style="top: 350px; left: 150px;">
         <input type="checkbox" title="Wounded">
+      </div>
+
+      <!-- Example “lined” textarea (Text Multi Line replacement) -->
+      <div class="field" data-key="hope_feature" style="top: 700px; left: 150px;">
+        <textarea class="lined-box" style="width: 260px; height: 92px; line-height: 18px; padding-top: 2px;"></textarea>
+      </div>
+
+      <!-- Example “text box” textarea -->
+      <div class="field" data-key="class_feature" style="top: 820px; left: 150px;">
+        <textarea class="text-box" style="width: 260px; height: 110px;"></textarea>
       </div>
     </div>
   </main>
 
+  <!-- === Coordinate helper: click to log top/left relative to sheet === -->
   <script>
-    // === Coordinate helper: click to log top/left relative to sheet ===
     (function () {
       const wrapper = document.querySelector(".sheet-wrapper");
       if (!wrapper) return;
@@ -155,20 +226,12 @@
     })();
   </script>
 
+  <!-- === Track generators === -->
   <script>
-    // === Track generators: linear row + grid (for armor 4x3) ===
     (function () {
       const wrapper = document.querySelector(".sheet-wrapper");
       if (!wrapper) return;
 
-      /**
-       * Linear horizontal track (one row of checkboxes)
-       * @param {string} baseKey e.g. "hp", "stress"
-       * @param {number} count   how many checkboxes total
-       * @param {number} top     top offset (px)
-       * @param {number} left    left offset (px)
-       * @param {number} gapX    px between boxes (default 18)
-       */
       function createLinearTrack(baseKey, count, top, left, gapX = 18) {
         const container = document.createElement("div");
         container.className = "track-container";
@@ -183,7 +246,6 @@
           const input = document.createElement("input");
           input.type = "checkbox";
 
-          // fine-tune spacing per track
           fieldWrapper.style.marginRight = (i === count - 1 ? 0 : gapX) + "px";
 
           fieldWrapper.appendChild(input);
@@ -193,16 +255,6 @@
         wrapper.appendChild(container);
       }
 
-      /**
-       * Grid track (for armor 4x3)
-       * @param {string} baseKey e.g. "armor"
-       * @param {number} rows
-       * @param {number} cols
-       * @param {number} top
-       * @param {number} left
-       * @param {number} gapX
-       * @param {number} gapY
-       */
       function createGridTrack(baseKey, rows, cols, top, left, gapX = 18, gapY = 10) {
         const container = document.createElement("div");
         container.className = "track-container";
@@ -229,30 +281,28 @@
         wrapper.appendChild(container);
       }
 
-      // ====== YOUR TRACKS (adjust coords & spacing) ======
+      // ===== Tracks (coords are placeholders - you’ll align later) =====
 
-      // Armor: 4 rows of 3 (12 total)
-      // Replace top/left with real values using the click logger.
+      // Armor: 4 rows of 3
       createGridTrack("armor", 4, 3, 400, 150, 18, 10);
 
-      // HP: horizontal row of 12 (normal spacing)
+      // HP: 12 max
       createLinearTrack("hp", 12, 500, 150, 18);
 
-      // Stress: horizontal row of 12 (slightly narrower spacing)
-      createLinearTrack("stress", 12, 530, 150, 14); // reduce gapX to tighten spacing
+      // Stress: 12 max, slightly tighter
+      createLinearTrack("stress", 12, 530, 150, 14);
 
-      // Gold (Handfuls): row of 9
-      createLinearTrack("gold_hand", 9, 560, 150, 18);
+      // Hope: set to your sheet’s printed max (change if needed)
+      createLinearTrack("hope", 10, 560, 150, 14);
 
-      // Gold (Bags): row of 9
-      createLinearTrack("gold_bag", 9, 590, 150, 18);
+      // Gold: handfuls/bags
+      createLinearTrack("gold_hand", 9, 590, 150, 18);
+      createLinearTrack("gold_bag", 9, 620, 150, 18);
 
-      // Proficiency: row of 6
-      createLinearTrack("proficiency", 6, 620, 150, 20);
+      // Proficiency
+      createLinearTrack("proficiency", 6, 650, 150, 20);
     })();
   </script>
-
-
 
   <!-- Firebase SDKs (compat version) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
