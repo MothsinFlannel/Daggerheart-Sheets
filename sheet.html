@@ -549,23 +549,222 @@
       // NOTE: these should NOT be "parked" — move them by editing these coords.
 
       // Armor: 12 (4 rows of 3)
-      createGridTrack("armor", 4, 3, 400, 150, 18, 10);
+      createGridTrack("armor", 4, 3, 107, 182, 0, 0);
 
       // HP: 12
-      createLinearTrack("hp", 12, 500, 150, 18);
+      createLinearTrack("hp", 12, 315, 50, 1);
 
       // Stress: 12 (tighter)
-      createLinearTrack("stress", 12, 530, 150, 14);
+      createLinearTrack("stress", 12, 345, 84, -2);
 
       // Hope: 10 (adjust if sheet uses different)
-      createLinearTrack("hope", 10, 560, 150, 14);
+      createLinearTrack("hope", 6, 420, 55, 24);
 
       // Gold: 9 and 9
-      createLinearTrack("gold_hand", 9, 590, 150, 18);
-      createLinearTrack("gold_bag", 9, 620, 150, 18);
+      createLinearTrack("gold_hand", 9, 707, 18, -8);
+      createLinearTrack("gold_bag", 9, 707, 180, -9);
 
       // Proficiency: 6
-      createLinearTrack("proficiency", 6, 650, 150, 20);
+      createLinearTrack("proficiency", 6, 235, 606, -10);
+    })();
+  </script>
+
+  <script>
+    (function () {
+      const wrapper = document.querySelector(".sheet-wrapper");
+      if (!wrapper) return;
+
+      // Toggle layout mode with ?layout=1
+      const params = new URLSearchParams(window.location.search);
+      const layoutMode = params.get("layout") === "1";
+
+      // Simple floating toolbar
+      const bar = document.createElement("div");
+      bar.style.position = "fixed";
+      bar.style.top = "10px";
+      bar.style.right = "10px";
+      bar.style.zIndex = "9999";
+      bar.style.padding = "10px";
+      bar.style.border = "1px solid rgba(255,255,255,0.2)";
+      bar.style.borderRadius = "10px";
+      bar.style.background = "rgba(0,0,0,0.7)";
+      bar.style.color = "#fff";
+      bar.style.fontSize = "12px";
+      bar.style.display = layoutMode ? "block" : "none";
+
+      bar.innerHTML = `
+        <div style="font-weight:700;margin-bottom:6px;">Layout Mode</div>
+        <div style="margin-bottom:6px;">Drag fields. Hold <b>Shift</b> = snap 10px.</div>
+        <button id="save-layout" style="margin-right:6px;">Save Layout</button>
+        <button id="reload-layout" style="margin-right:6px;">Reload</button>
+        <button id="toggle-outlines">Outlines</button>
+        <div id="pos-readout" style="margin-top:6px;opacity:0.85;"></div>
+      `;
+      document.body.appendChild(bar);
+
+      if (!layoutMode) return;
+
+      const btnSave = document.getElementById("save-layout");
+      const btnReload = document.getElementById("reload-layout");
+      const btnOutlines = document.getElementById("toggle-outlines");
+      const readout = document.getElementById("pos-readout");
+
+      btnSave.addEventListener("click", async () => {
+        try {
+          await window.__layout.saveLayout();
+          readout.textContent = "Saved layout ✔";
+        } catch (e) {
+          console.error(e);
+          readout.textContent = "Save failed ❌ (see console)";
+        }
+      });
+
+      btnReload.addEventListener("click", async () => {
+        try {
+          await window.__layout.reloadLayout();
+          readout.textContent = "Reloaded layout ✔";
+        } catch (e) {
+          console.error(e);
+          readout.textContent = "Reload failed ❌";
+        }
+      });
+
+      let outlines = false;
+      btnOutlines.addEventListener("click", () => {
+        outlines = !outlines;
+        document.querySelectorAll(".field").forEach(f => {
+          f.style.outline = outlines ? "1px dashed rgba(0,255,0,0.8)" : "";
+        });
+      });
+
+      // Click-to-log coordinates still available
+      wrapper.addEventListener("click", (e) => {
+        const rect = wrapper.getBoundingClientRect();
+        const top = Math.round(e.clientY - rect.top);
+        const left = Math.round(e.clientX - rect.left);
+        console.log(`[coord] top:${top}px left:${left}px`);
+      });
+
+      // Drag and drop fields
+      let dragging = null;
+      let startMouse = { x: 0, y: 0 };
+      let startPos = { top: 0, left: 0 };
+
+      function getFieldTarget(el) {
+        return el.closest(".field");
+      }
+
+      function px(n) { return `${Math.round(n)}px`; }
+
+      function getTopLeft(field) {
+        const t = parseFloat(field.style.top);
+        const l = parseFloat(field.style.left);
+        return {
+          top: Number.isNaN(t) ? field.offsetTop : t,
+          left: Number.isNaN(l) ? field.offsetLeft : l
+        };
+      }
+
+      // Prevent text selection while dragging
+      function setNoSelect(on) {
+        document.body.style.userSelect = on ? "none" : "";
+      }
+
+      wrapper.addEventListener("mousedown", (e) => {
+        // only left click
+        if (e.button !== 0) return;
+
+        const field = getFieldTarget(e.target);
+        if (!field) return;
+
+        // Don’t drag track checkboxes (they’re inside containers)
+        // You CAN drag them if you want, but it’s messy since their container controls placement.
+        const key = field.dataset.key || "";
+        if (/_\d+$/.test(key)) return;
+
+        e.preventDefault();
+
+        dragging = field;
+        dragging.classList.remove("parked");
+
+        const cur = getTopLeft(dragging);
+        startPos = { top: cur.top, left: cur.left };
+        startMouse = { x: e.clientX, y: e.clientY };
+
+        setNoSelect(true);
+        readout.textContent = `${key} → top:${Math.round(cur.top)} left:${Math.round(cur.left)}`;
+      });
+
+      window.addEventListener("mousemove", (e) => {
+        if (!dragging) return;
+
+        const dx = e.clientX - startMouse.x;
+        const dy = e.clientY - startMouse.y;
+
+        let newTop = startPos.top + dy;
+        let newLeft = startPos.left + dx;
+
+        // Shift = snap to 10px grid
+        if (e.shiftKey) {
+          newTop = Math.round(newTop / 10) * 10;
+          newLeft = Math.round(newLeft / 10) * 10;
+        } else {
+          newTop = Math.round(newTop);
+          newLeft = Math.round(newLeft);
+        }
+
+        dragging.style.top = px(newTop);
+        dragging.style.left = px(newLeft);
+
+        const key = dragging.dataset.key || "";
+        readout.textContent = `${key} → top:${newTop} left:${newLeft}`;
+      });
+
+      window.addEventListener("mouseup", () => {
+        if (!dragging) return;
+        setNoSelect(false);
+
+        const key = dragging.dataset.key || "";
+        console.log(`[layout] ${key}: top:${dragging.style.top} left:${dragging.style.left}`);
+
+        dragging = null;
+      });
+
+      // Optional: nudge selected field with arrow keys
+      let selected = null;
+      wrapper.addEventListener("click", (e) => {
+        const field = getFieldTarget(e.target);
+        if (!field) return;
+        selected = field;
+      });
+
+      window.addEventListener("keydown", (e) => {
+        if (!selected) return;
+        if (!["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)) return;
+
+        // Don’t move when typing in inputs
+        const tag = (document.activeElement && document.activeElement.tagName) || "";
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+        e.preventDefault();
+
+        const step = e.shiftKey ? 10 : 1;
+        const cur = getTopLeft(selected);
+
+        let top = cur.top;
+        let left = cur.left;
+
+        if (e.key === "ArrowUp") top -= step;
+        if (e.key === "ArrowDown") top += step;
+        if (e.key === "ArrowLeft") left -= step;
+        if (e.key === "ArrowRight") left += step;
+
+        selected.style.top = px(top);
+        selected.style.left = px(left);
+
+        const key = selected.dataset.key || "";
+        readout.textContent = `${key} → top:${top} left:${left}`;
+      });
     })();
   </script>
 
